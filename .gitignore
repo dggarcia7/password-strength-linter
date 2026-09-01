@@ -1,0 +1,4 @@
+/passlint
+/passlint.exe
+*.test
+*.out
