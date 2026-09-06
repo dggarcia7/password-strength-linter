@@ -9,29 +9,48 @@ package main
 
 import (
 	"bufio"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"io"
 	"os"
 )
 
+// report is one finding formatted for output, either as a text line or as
+// an element of the -json array.
+type report struct {
+	Path     string `json:"path"`
+	Line     int    `json:"line"`
+	Severity string `json:"severity"`
+	Message  string `json:"message"`
+}
+
 func main() {
 	raw := flag.Bool("raw", false, "treat each input line as a password itself, instead of scanning for key=value assignments")
+	jsonOutput := flag.Bool("json", false, "report findings as a JSON array instead of text lines")
 	flag.Parse()
 
 	args := flag.Args()
 	exitCode := 0
+	reports := make([]report, 0)
+
+	scan := func(name string, r io.Reader) {
+		found, err := scanSource(name, r, *raw)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "passlint: %s: %v\n", name, err)
+		}
+		if len(found) > 0 {
+			exitCode = 1
+			reports = append(reports, found...)
+		}
+	}
 
 	if len(args) == 0 {
-		if !scanSource("stdin", os.Stdin, *raw) {
-			exitCode = 1
-		}
+		scan("stdin", os.Stdin)
 	} else {
 		for _, path := range args {
 			if path == "-" {
-				if !scanSource("stdin", os.Stdin, *raw) {
-					exitCode = 1
-				}
+				scan("stdin", os.Stdin)
 				continue
 			}
 
@@ -41,22 +60,30 @@ func main() {
 				exitCode = 2
 				continue
 			}
-			clean := scanSource(path, f, *raw)
+			scan(path, f)
 			f.Close()
-			if !clean {
-				exitCode = 1
-			}
+		}
+	}
+
+	if *jsonOutput {
+		enc := json.NewEncoder(os.Stdout)
+		enc.SetIndent("", "  ")
+		if err := enc.Encode(reports); err != nil {
+			fmt.Fprintf(os.Stderr, "passlint: %v\n", err)
+			exitCode = 2
+		}
+	} else {
+		for _, r := range reports {
+			fmt.Printf("%s:%d: %s: %s\n", r.Path, r.Line, r.Severity, r.Message)
 		}
 	}
 
 	os.Exit(exitCode)
 }
 
-// scanSource reads r line by line, printing one line of output per finding.
-// It returns false if it reported anything, so the caller can turn that
-// into a non-zero exit status without keeping its own counters.
-func scanSource(name string, r io.Reader, raw bool) bool {
-	clean := true
+// scanSource reads r line by line and returns one report per finding.
+func scanSource(name string, r io.Reader, raw bool) ([]report, error) {
+	var found []report
 	scanner := bufio.NewScanner(r)
 	lineNo := 0
 
@@ -75,15 +102,15 @@ func scanSource(name string, r io.Reader, raw bool) bool {
 
 		for _, pw := range candidates {
 			for _, f := range checkPassword(pw) {
-				clean = false
-				fmt.Printf("%s:%d: %s: %s\n", name, lineNo, f.Severity, f.Message)
+				found = append(found, report{
+					Path:     name,
+					Line:     lineNo,
+					Severity: f.Severity,
+					Message:  f.Message,
+				})
 			}
 		}
 	}
 
-	if err := scanner.Err(); err != nil {
-		fmt.Fprintf(os.Stderr, "passlint: %s: %v\n", name, err)
-	}
-
-	return clean
+	return found, scanner.Err()
 }

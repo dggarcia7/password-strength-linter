@@ -62,6 +62,24 @@ opened, and `0` if the input was clean, so it can be used as a CI gate.
 Passwords in findings are redacted to the first and last two characters so
 the actual value doesn't end up sitting in build logs.
 
+Pass `-json` to get findings as a JSON array instead of text lines, which is
+easier for a CI pipeline to parse than scraping stdout:
+
+```
+$ passlint -json config.yaml
+[
+  {
+    "path": "config.yaml",
+    "line": 4,
+    "severity": "error",
+    "message": "only 6 characters, minimum is 8 (ab***23)"
+  }
+]
+```
+
+The array is printed once, after all files have been scanned, and is empty
+(`[]`) when nothing was found.
+
 ## What it checks
 
 - length (error under 8 characters, warning under 12)
