@@ -58,7 +58,7 @@ func TestCheckPasswordLength(t *testing.T) {
 }
 
 func TestCheckPasswordCommonList(t *testing.T) {
-	for _, pw := range []string{"password", "PASSWORD", "PaSsWoRd"} {
+	for _, pw := range []string{"password", "PASSWORD", "PaSsWoRd", "qwerty123", "trustno1", "P@ssword"} {
 		findings := checkPassword(pw)
 		if !hasFindingContaining(findings, "commonly used password") {
 			t.Errorf("checkPassword(%q) = %v, want a common password finding", pw, findingMessages(findings))
@@ -68,6 +68,16 @@ func TestCheckPasswordCommonList(t *testing.T) {
 	findings := checkPassword("Xk8#mQ2p!Zv9")
 	if hasFindingContaining(findings, "commonly used password") {
 		t.Errorf("checkPassword on a non-common password reported a common password finding: %v", findingMessages(findings))
+	}
+}
+
+func TestCommonPasswordsLowercase(t *testing.T) {
+	// checkPassword only ever looks up strings.ToLower(pw), so an entry with
+	// any uppercase in it would silently never match.
+	for pw := range commonPasswords {
+		if pw != strings.ToLower(pw) {
+			t.Errorf("commonPasswords contains %q, which is not lowercase and will never match", pw)
+		}
 	}
 }
 

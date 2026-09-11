@@ -83,7 +83,8 @@ The array is printed once, after all files have been scanned, and is empty
 ## What it checks
 
 - length (error under 8 characters, warning under 12)
-- membership in a small list of commonly reused passwords
+- membership in a list of ~120 passwords that show up repeatedly in breach
+  dumps and "worst passwords" roundups
 - missing character classes (upper/lower/digit/symbol) when two or more are
   absent
 - a character repeated four or more times in a row

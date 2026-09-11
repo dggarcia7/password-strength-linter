@@ -29,23 +29,53 @@ func extractCandidates(line string) []string {
 	return candidates
 }
 
-// commonPasswords is a small seed list of the most frequently reused
-// passwords. It's deliberately short for now; see the roadmap in README.md.
+// commonPasswords collects passwords that show up over and over in public
+// breach dumps and "worst passwords of the year" roundups: keyboard walks,
+// digit runs, sports teams, first names, and the obvious password/password1
+// variants. Checked case-insensitively, so casing tricks don't help.
 var commonPasswords = map[string]bool{
-	"password":  true,
-	"123456":    true,
-	"12345678":  true,
-	"123456789": true,
-	"qwerty":    true,
-	"letmein":   true,
-	"admin":     true,
-	"welcome":   true,
-	"monkey":    true,
-	"dragon":    true,
-	"iloveyou":  true,
-	"abc123":    true,
-	"111111":    true,
-	"password1": true,
+	// digit runs and keyboard walks
+	"123456": true, "12345678": true, "123456789": true, "1234567890": true,
+	"1234567": true, "12345": true, "1234": true, "123123": true,
+	"123321": true, "000000": true, "111111": true, "121212": true,
+	"222222": true, "333333": true, "555555": true, "666666": true,
+	"696969": true, "777777": true, "999999": true,
+	"qwerty": true, "qwerty1": true, "qwerty123": true, "qwertyuiop": true,
+	"asdfgh": true, "asdfghjkl": true, "zxcvbnm": true, "zaq1zaq1": true,
+	"1q2w3e": true, "1q2w3e4r": true, "1qaz2wsx": true, "qazwsx": true,
+
+	// password/admin/default variants
+	"password": true, "password1": true, "password123": true, "password2": true,
+	"passw0rd": true, "p@ssword": true, "letmein": true, "letmein1": true,
+	"admin": true, "root": true, "toor": true, "guest": true,
+	"test": true, "test123": true, "changeme": true, "temp123": true,
+	"default": true, "welcome": true, "trustno1": true, "opensesame": true,
+	"secret": true, "access": true, "master": true, "shadow": true,
+
+	// dictionary words, names, and topical picks
+	"abc123": true, "iloveyou": true, "monkey": true, "monkey1": true,
+	"dragon": true, "princess": true, "sunshine": true, "ashley": true,
+	"bailey": true, "hunter": true, "ranger": true, "buster": true,
+	"thomas": true, "robert": true, "michael": true, "jennifer": true,
+	"jordan": true, "andrew": true, "charlie": true, "jessica": true,
+	"michelle": true, "amanda": true, "hannah": true, "joshua": true,
+	"matthew": true, "maggie": true, "tigger": true, "snoopy": true,
+	"ginger": true, "purple": true, "orange": true, "banana": true,
+	"diamond": true, "nascar": true, "jasmine": true, "dakota": true,
+	"cameron": true, "george": true, "sexy": true, "killer": true,
+	"love": true, "love123": true, "jesus": true, "angel": true, "angel1": true,
+	"whatever": true, "freedom": true, "computer": true, "internet": true,
+	"coffee": true, "chocolate": true, "cookie": true, "summer": true,
+	"winter": true, "flower": true,
+
+	// sports and pop culture
+	"football": true, "baseball": true, "basketball": true, "soccer": true,
+	"hockey": true, "yankees": true, "chelsea": true, "arsenal": true,
+	"liverpool": true, "barcelona": true, "mustang": true, "harley": true,
+	"corvette": true, "dallas": true, "biteme": true, "panties": true,
+	"pepper": true, "batman": true, "superman": true, "spiderman": true,
+	"ironman": true, "ninja": true, "samurai": true, "starwars": true,
+	"pokemon": true,
 }
 
 // keyboardRuns are substrings that show up whenever someone types along a
