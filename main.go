@@ -5,6 +5,10 @@
 // key looks like a password field (password, pwd, secret, token, ...) and
 // checks the value. With -raw it treats every non-empty line as a password
 // on its own, which is the right mode for auditing a plain wordlist.
+//
+// A line containing "passlint:ignore" is skipped entirely, so a known and
+// accepted value (a test fixture, say) can be excluded without disabling
+// the rule everywhere.
 package main
 
 import (
@@ -14,7 +18,12 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strings"
 )
+
+// ignoreMarker suppresses findings on the line it appears on, the same way
+// linters let you silence a rule inline instead of restructuring the code.
+const ignoreMarker = "passlint:ignore"
 
 // report is one finding formatted for output, either as a text line or as
 // an element of the -json array.
@@ -90,6 +99,10 @@ func scanSource(name string, r io.Reader, raw bool) ([]report, error) {
 	for scanner.Scan() {
 		lineNo++
 		line := scanner.Text()
+
+		if strings.Contains(line, ignoreMarker) {
+			continue
+		}
 
 		var candidates []string
 		if raw {

@@ -56,6 +56,20 @@ passwords.txt:1: error: matches a commonly used password (pa***rd)
 passwords.txt:9: warning: only 10 characters, 12 or more is recommended (su***23)
 ```
 
+A line containing `passlint:ignore` is skipped entirely, for a known and
+accepted value such as a test fixture:
+
+```
+$ cat fixtures.env
+password = "hunter22" # passlint:ignore
+token: qwerty123
+$ passlint fixtures.env
+fixtures.env:2: warning: only 9 characters, 12 or more is recommended (qw*****23)
+fixtures.env:2: error: matches a commonly used password (qw*****23)
+fixtures.env:2: warning: missing uppercase letters, symbols (qw*****23)
+fixtures.env:2: warning: contains a common keyboard or numeric sequence (qw*****23)
+```
+
 passlint exits `1` if it reported any findings, `2` if a file couldn't be
 opened, and `0` if the input was clean, so it can be used as a CI gate.
 
