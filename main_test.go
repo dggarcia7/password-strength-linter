@@ -44,3 +44,32 @@ func TestScanSourceIgnoreMarkerRaw(t *testing.T) {
 		}
 	}
 }
+
+func TestMeetsFailThreshold(t *testing.T) {
+	reports := []report{
+		{Path: "test", Line: 1, Severity: "warning", Message: "too short"},
+	}
+
+	cases := []struct {
+		failOn string
+		want   bool
+	}{
+		{"warning", true},
+		{"error", false},
+		{"none", false},
+	}
+	for _, c := range cases {
+		if got := meetsFailThreshold(reports, c.failOn); got != c.want {
+			t.Errorf("meetsFailThreshold(warning-only, %q) = %v, want %v", c.failOn, got, c.want)
+		}
+	}
+
+	reports = append(reports, report{Path: "test", Line: 2, Severity: "error", Message: "common password"})
+	if !meetsFailThreshold(reports, "error") {
+		t.Errorf("meetsFailThreshold(with error, %q) = false, want true", "error")
+	}
+
+	if meetsFailThreshold(nil, "warning") {
+		t.Errorf("meetsFailThreshold(nil, %q) = true, want false", "warning")
+	}
+}

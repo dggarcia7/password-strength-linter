@@ -37,10 +37,18 @@ type report struct {
 func main() {
 	raw := flag.Bool("raw", false, "treat each input line as a password itself, instead of scanning for key=value assignments")
 	jsonOutput := flag.Bool("json", false, "report findings as a JSON array instead of text lines")
+	failOn := flag.String("fail-on", "warning", "minimum severity that causes a non-zero exit code: error, warning, or none")
 	flag.Parse()
 
+	switch *failOn {
+	case "error", "warning", "none":
+	default:
+		fmt.Fprintf(os.Stderr, "passlint: invalid -fail-on value %q, want error, warning, or none\n", *failOn)
+		os.Exit(2)
+	}
+
 	args := flag.Args()
-	exitCode := 0
+	hadOpenErr := false
 	reports := make([]report, 0)
 
 	scan := func(name string, r io.Reader) {
@@ -48,10 +56,7 @@ func main() {
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "passlint: %s: %v\n", name, err)
 		}
-		if len(found) > 0 {
-			exitCode = 1
-			reports = append(reports, found...)
-		}
+		reports = append(reports, found...)
 	}
 
 	if len(args) == 0 {
@@ -66,7 +71,7 @@ func main() {
 			f, err := os.Open(path)
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "passlint: %v\n", err)
-				exitCode = 2
+				hadOpenErr = true
 				continue
 			}
 			scan(path, f)
@@ -79,7 +84,7 @@ func main() {
 		enc.SetIndent("", "  ")
 		if err := enc.Encode(reports); err != nil {
 			fmt.Fprintf(os.Stderr, "passlint: %v\n", err)
-			exitCode = 2
+			os.Exit(2)
 		}
 	} else {
 		for _, r := range reports {
@@ -87,7 +92,33 @@ func main() {
 		}
 	}
 
-	os.Exit(exitCode)
+	switch {
+	case hadOpenErr:
+		os.Exit(2)
+	case meetsFailThreshold(reports, *failOn):
+		os.Exit(1)
+	default:
+		os.Exit(0)
+	}
+}
+
+// meetsFailThreshold reports whether reports contains a finding severe
+// enough to warrant a non-zero exit code under failOn, which is one of
+// "error", "warning", or "none" (already validated by the caller).
+func meetsFailThreshold(reports []report, failOn string) bool {
+	switch failOn {
+	case "none":
+		return false
+	case "error":
+		for _, r := range reports {
+			if r.Severity == "error" {
+				return true
+			}
+		}
+		return false
+	default: // "warning"
+		return len(reports) > 0
+	}
 }
 
 // scanSource reads r line by line and returns one report per finding.

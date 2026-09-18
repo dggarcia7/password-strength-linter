@@ -73,6 +73,22 @@ fixtures.env:2: warning: contains a common keyboard or numeric sequence (qw*****
 passlint exits `1` if it reported any findings, `2` if a file couldn't be
 opened, and `0` if the input was clean, so it can be used as a CI gate.
 
+Pass `-fail-on` to control which severities count toward that exit code.
+`-fail-on error` exits `0` on warnings and only fails the build on errors,
+which is useful during a migration when you want visibility into warnings
+without blocking on them yet. `-fail-on none` always exits `0` (unless a
+file couldn't be opened), for a report-only mode. The default is
+`-fail-on warning`, matching the behavior above.
+
+```
+$ passlint -fail-on error fixtures.env; echo "exit: $?"
+fixtures.env:2: warning: only 9 characters, 12 or more is recommended (qw*****23)
+fixtures.env:2: error: matches a commonly used password (qw*****23)
+fixtures.env:2: warning: missing uppercase letters, symbols (qw*****23)
+fixtures.env:2: warning: contains a common keyboard or numeric sequence (qw*****23)
+exit: 1
+```
+
 Passwords in findings are redacted to the first and last two characters so
 the actual value doesn't end up sitting in build logs.
 
