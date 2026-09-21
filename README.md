@@ -110,6 +110,34 @@ $ passlint -json config.yaml
 The array is printed once, after all files have been scanned, and is empty
 (`[]`) when nothing was found.
 
+## Config file
+
+The built-in thresholds and checks won't fit every project. Pass `-config`
+with a path to a JSON file to override them:
+
+```
+$ cat passlint.json
+{
+  "min_length": 10,
+  "recommended_length": 14,
+  "extra_passwords": ["CompanyName2024", "WelcomeToAcme1"],
+  "disabled_checks": ["keyboard_run"]
+}
+
+$ passlint -config passlint.json config.yaml
+```
+
+All fields are optional; anything left out keeps its built-in value
+(`min_length: 8`, `recommended_length: 12`, no extra passwords, no disabled
+checks). `extra_passwords` adds to, rather than replaces, the built-in list
+of ~120 common passwords, and is matched the same way: case-insensitively,
+against the whole value. `disabled_checks` turns off checks by name:
+`length`, `common`, `char_classes`, `repeated_run`, `keyboard_run`.
+
+An unknown field, an unknown check name, or a `recommended_length` below
+`min_length` is a config error, and passlint exits `2` without scanning
+anything.
+
 ## What it checks
 
 - length (error under 8 characters, warning under 12)

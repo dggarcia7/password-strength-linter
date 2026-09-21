@@ -89,36 +89,46 @@ var keyboardRuns = []string{
 	"zxcvbnm",
 }
 
-func checkPassword(pw string) []Finding {
+func checkPassword(pw string, cfg Config) []Finding {
 	var findings []Finding
 
-	switch n := len(pw); {
-	case n < 8:
-		findings = append(findings, Finding{"error",
-			fmt.Sprintf("only %d characters, minimum is 8 (%s)", n, redact(pw))})
-	case n < 12:
-		findings = append(findings, Finding{"warning",
-			fmt.Sprintf("only %d characters, 12 or more is recommended (%s)", n, redact(pw))})
+	if cfg.enabled("length") {
+		switch n := len(pw); {
+		case n < cfg.MinLength:
+			findings = append(findings, Finding{"error",
+				fmt.Sprintf("only %d characters, minimum is %d (%s)", n, cfg.MinLength, redact(pw))})
+		case n < cfg.RecommendedLength:
+			findings = append(findings, Finding{"warning",
+				fmt.Sprintf("only %d characters, %d or more is recommended (%s)", n, cfg.RecommendedLength, redact(pw))})
+		}
 	}
 
-	if commonPasswords[strings.ToLower(pw)] {
-		findings = append(findings, Finding{"error",
-			fmt.Sprintf("matches a commonly used password (%s)", redact(pw))})
+	if cfg.enabled("common") {
+		if commonPasswords[strings.ToLower(pw)] || cfg.isExtraPassword(pw) {
+			findings = append(findings, Finding{"error",
+				fmt.Sprintf("matches a commonly used password (%s)", redact(pw))})
+		}
 	}
 
-	if missing := missingCharClasses(pw); len(missing) >= 2 {
-		findings = append(findings, Finding{"warning",
-			fmt.Sprintf("missing %s (%s)", strings.Join(missing, ", "), redact(pw))})
+	if cfg.enabled("char_classes") {
+		if missing := missingCharClasses(pw); len(missing) >= 2 {
+			findings = append(findings, Finding{"warning",
+				fmt.Sprintf("missing %s (%s)", strings.Join(missing, ", "), redact(pw))})
+		}
 	}
 
-	if hasRepeatedRun(pw, 4) {
-		findings = append(findings, Finding{"warning",
-			fmt.Sprintf("contains a character repeated 4 or more times in a row (%s)", redact(pw))})
+	if cfg.enabled("repeated_run") {
+		if hasRepeatedRun(pw, 4) {
+			findings = append(findings, Finding{"warning",
+				fmt.Sprintf("contains a character repeated 4 or more times in a row (%s)", redact(pw))})
+		}
 	}
 
-	if containsKeyboardRun(pw) {
-		findings = append(findings, Finding{"warning",
-			fmt.Sprintf("contains a common keyboard or numeric sequence (%s)", redact(pw))})
+	if cfg.enabled("keyboard_run") {
+		if containsKeyboardRun(pw) {
+			findings = append(findings, Finding{"warning",
+				fmt.Sprintf("contains a common keyboard or numeric sequence (%s)", redact(pw))})
+		}
 	}
 
 	return findings

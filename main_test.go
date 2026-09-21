@@ -8,7 +8,7 @@ import (
 func TestScanSourceIgnoreMarker(t *testing.T) {
 	input := "password = \"hunter22\" # passlint:ignore\ntoken: qwerty123\n"
 
-	found, err := scanSource("test", strings.NewReader(input), false)
+	found, err := scanSource("test", strings.NewReader(input), false, defaultConfig())
 	if err != nil {
 		t.Fatalf("scanSource returned error: %v", err)
 	}
@@ -33,7 +33,7 @@ func TestScanSourceIgnoreMarker(t *testing.T) {
 func TestScanSourceIgnoreMarkerRaw(t *testing.T) {
 	input := "password1\nqwerty # passlint:ignore\n"
 
-	found, err := scanSource("test", strings.NewReader(input), true)
+	found, err := scanSource("test", strings.NewReader(input), true, defaultConfig())
 	if err != nil {
 		t.Fatalf("scanSource returned error: %v", err)
 	}

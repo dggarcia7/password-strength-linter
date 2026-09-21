@@ -36,7 +36,7 @@ func TestCheckPasswordLength(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			findings := checkPassword(tc.pw)
+			findings := checkPassword(tc.pw, defaultConfig())
 			var got *Finding
 			for i := range findings {
 				if strings.Contains(findings[i].Message, "characters") {
@@ -59,13 +59,13 @@ func TestCheckPasswordLength(t *testing.T) {
 
 func TestCheckPasswordCommonList(t *testing.T) {
 	for _, pw := range []string{"password", "PASSWORD", "PaSsWoRd", "qwerty123", "trustno1", "P@ssword"} {
-		findings := checkPassword(pw)
+		findings := checkPassword(pw, defaultConfig())
 		if !hasFindingContaining(findings, "commonly used password") {
 			t.Errorf("checkPassword(%q) = %v, want a common password finding", pw, findingMessages(findings))
 		}
 	}
 
-	findings := checkPassword("Xk8#mQ2p!Zv9")
+	findings := checkPassword("Xk8#mQ2p!Zv9", defaultConfig())
 	if hasFindingContaining(findings, "commonly used password") {
 		t.Errorf("checkPassword on a non-common password reported a common password finding: %v", findingMessages(findings))
 	}
@@ -84,32 +84,32 @@ func TestCommonPasswordsLowercase(t *testing.T) {
 func TestCheckPasswordMissingCharClasses(t *testing.T) {
 	// Only lowercase and digits present, so two classes (upper, symbol) are
 	// missing and the finding should fire.
-	findings := checkPassword("abcdefgh123")
+	findings := checkPassword("abcdefgh123", defaultConfig())
 	if !hasFindingContaining(findings, "missing") {
 		t.Errorf("checkPassword(%q) = %v, want a missing-char-class finding", "abcdefgh123", findingMessages(findings))
 	}
 
 	// Only one class missing (symbols) should not trigger the finding.
-	findings = checkPassword("abcdEFGH123")
+	findings = checkPassword("abcdEFGH123", defaultConfig())
 	if hasFindingContaining(findings, "missing") {
 		t.Errorf("checkPassword(%q) unexpectedly reported a missing-char-class finding: %v", "abcdEFGH123", findingMessages(findings))
 	}
 }
 
 func TestCheckPasswordRepeatedRun(t *testing.T) {
-	findings := checkPassword("aaaaBcd123!")
+	findings := checkPassword("aaaaBcd123!", defaultConfig())
 	if !hasFindingContaining(findings, "repeated") {
 		t.Errorf("checkPassword with a repeated run = %v, want a repeated-run finding", findingMessages(findings))
 	}
 
-	findings = checkPassword("aaaBcd123!Z")
+	findings = checkPassword("aaaBcd123!Z", defaultConfig())
 	if hasFindingContaining(findings, "repeated") {
 		t.Errorf("checkPassword with only 3 repeats unexpectedly reported a repeated-run finding: %v", findingMessages(findings))
 	}
 }
 
 func TestCheckPasswordKeyboardRun(t *testing.T) {
-	findings := checkPassword("myqwertyPass1!")
+	findings := checkPassword("myqwertyPass1!", defaultConfig())
 	if !hasFindingContaining(findings, "keyboard or numeric sequence") {
 		t.Errorf("checkPassword with a keyboard run = %v, want a keyboard-run finding", findingMessages(findings))
 	}

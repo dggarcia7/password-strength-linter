@@ -38,6 +38,7 @@ func main() {
 	raw := flag.Bool("raw", false, "treat each input line as a password itself, instead of scanning for key=value assignments")
 	jsonOutput := flag.Bool("json", false, "report findings as a JSON array instead of text lines")
 	failOn := flag.String("fail-on", "warning", "minimum severity that causes a non-zero exit code: error, warning, or none")
+	configPath := flag.String("config", "", "path to a JSON config file overriding thresholds and enabled checks (see README)")
 	flag.Parse()
 
 	switch *failOn {
@@ -47,12 +48,18 @@ func main() {
 		os.Exit(2)
 	}
 
+	cfg, err := loadConfig(*configPath)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "passlint: %v\n", err)
+		os.Exit(2)
+	}
+
 	args := flag.Args()
 	hadOpenErr := false
 	reports := make([]report, 0)
 
 	scan := func(name string, r io.Reader) {
-		found, err := scanSource(name, r, *raw)
+		found, err := scanSource(name, r, *raw, cfg)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "passlint: %s: %v\n", name, err)
 		}
@@ -122,7 +129,7 @@ func meetsFailThreshold(reports []report, failOn string) bool {
 }
 
 // scanSource reads r line by line and returns one report per finding.
-func scanSource(name string, r io.Reader, raw bool) ([]report, error) {
+func scanSource(name string, r io.Reader, raw bool, cfg Config) ([]report, error) {
 	var found []report
 	scanner := bufio.NewScanner(r)
 	lineNo := 0
@@ -145,7 +152,7 @@ func scanSource(name string, r io.Reader, raw bool) ([]report, error) {
 		}
 
 		for _, pw := range candidates {
-			for _, f := range checkPassword(pw) {
+			for _, f := range checkPassword(pw, cfg) {
 				found = append(found, report{
 					Path:     name,
 					Line:     lineNo,
